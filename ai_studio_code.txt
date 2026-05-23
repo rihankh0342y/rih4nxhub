@@ -1,0 +1,292 @@
+--// RIH4NX HUB V2 - ALL IN ONE
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "RIH4NX_V2"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ResetOnSpawn = false
+
+-- Main UI
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Parent = ScreenGui
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Main.BorderSizePixel = 0
+Main.Position = UDim2.new(0.5, -300, 0.5, -175)
+Main.Size = UDim2.new(0, 600, 0, 400)
+Main.ClipsDescendants = true
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+
+-- Make Draggable
+local Dragging, DragInput, DragStart, StartPos
+Main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        Dragging = true
+        DragStart = input.Position
+        StartPos = Main.Position
+    end
+end)
+Main.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        DragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == DragInput and Dragging then
+        local Delta = input.Position - DragStart
+        Main.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        Dragging = false
+    end
+end)
+
+-- Sidebar
+local Sidebar = Instance.new("Frame")
+Sidebar.Name = "Sidebar"
+Sidebar.Parent = Main
+Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+Sidebar.Size = UDim2.new(0, 160, 1, 0)
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
+
+local Title = Instance.new("TextLabel")
+Title.Parent = Sidebar
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Text = "RIH4NX HUB"
+Title.TextColor3 = Color3.fromRGB(0, 170, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 20
+Title.BackgroundTransparency = 1
+
+-- Container for Pages
+local Container = Instance.new("Frame")
+Container.Parent = Main
+Container.Position = UDim2.new(0, 170, 0, 10)
+Container.Size = UDim2.new(1, -180, 1, -20)
+Container.BackgroundTransparency = 1
+
+local Pages = {}
+local function CreatePage(name)
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = name
+    Page.Parent = Container
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.ScrollBarThickness = 2
+    Page.Visible = false
+    Pages[name] = Page
+    return Page
+end
+
+local HomePage = CreatePage("Home")
+local PlayerPage = CreatePage("Player")
+local FunPage = CreatePage("Fun")
+
+-- Home Page Info
+local Welcome = Instance.new("TextLabel")
+Welcome.Parent = HomePage
+Welcome.Size = UDim2.new(1, 0, 0, 30)
+Welcome.Text = "Welcome, " .. LocalPlayer.DisplayName
+Welcome.TextColor3 = Color3.new(1,1,1)
+Welcome.Font = Enum.Font.GothamBold
+Welcome.TextSize = 18
+Welcome.BackgroundTransparency = 1
+
+local Info = Instance.new("TextLabel")
+Info.Parent = HomePage
+Info.Position = UDim2.new(0,0,0,40)
+Info.Size = UDim2.new(1, 0, 0, 20)
+Info.Text = "Account Age: " .. LocalPlayer.AccountAge .. " days"
+Info.TextColor3 = Color3.fromRGB(200,200,200)
+Info.Font = Enum.Font.Gotham
+Info.TextSize = 14
+Info.BackgroundTransparency = 1
+
+-- UI Toggle Key (RightControl)
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        Main.Visible = not Main.Visible
+    end
+end)
+
+-- Notification System
+local function Notify(txt)
+    local n = Instance.new("Frame")
+    n.Size = UDim2.new(0, 200, 0, 40)
+    n.Position = UDim2.new(1, 5, 0.8, 0)
+    n.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    n.Parent = ScreenGui
+    Instance.new("UICorner", n)
+    
+    local l = Instance.new("TextLabel")
+    l.Size = UDim2.new(1,0,1,0)
+    l.Text = txt
+    l.TextColor3 = Color3.new(1,1,1)
+    l.BackgroundTransparency = 1
+    l.Parent = n
+    
+    n:TweenPosition(UDim2.new(1, -210, 0.8, 0), "Out", "Back", 0.5)
+    task.delay(3, function()
+        n:TweenPosition(UDim2.new(1, 5, 0.8, 0), "In", "Back", 0.5)
+        task.wait(0.5)
+        n:Destroy()
+    end)
+end
+
+-- Tab Creator
+local function CreateTab(name, page)
+    local Tab = Instance.new("TextButton")
+    Tab.Parent = Sidebar
+    Tab.Size = UDim2.new(0.9, 0, 0, 35)
+    Tab.Position = UDim2.new(0.05, 0, 0, 60 + (#Sidebar:GetChildren() - 2) * 45)
+    Tab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Tab.Text = name
+    Tab.TextColor3 = Color3.new(1, 1, 1)
+    Tab.Font = Enum.Font.GothamBold
+    Tab.TextSize = 14
+    Instance.new("UICorner", Tab).CornerRadius = UDim.new(0, 6)
+
+    Tab.MouseButton1Click:Connect(function()
+        for _, p in pairs(Pages) do p.Visible = false end
+        page.Visible = true
+        Notify("Opened: " .. name)
+    end)
+end
+
+CreateTab("Home", HomePage)
+CreateTab("Player", PlayerPage)
+CreateTab("Fun", FunPage)
+
+-- Components: Toggle & Slider
+local function CreateSlider(parent, text, min, max, default, callback)
+    local SliderFrame = Instance.new("Frame")
+    SliderFrame.Size = UDim2.new(0.9, 0, 0, 50)
+    SliderFrame.Parent = parent
+    SliderFrame.BackgroundTransparency = 1
+    SliderFrame.LayoutOrder = #parent:GetChildren()
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, 0, 0, 20)
+    Label.Text = text .. ": " .. default
+    Label.TextColor3 = Color3.new(1, 1, 1)
+    Label.BackgroundTransparency = 1
+    Label.Parent = SliderFrame
+    Label.Font = Enum.Font.Gotham
+
+    local Bar = Instance.new("Frame")
+    Bar.Size = UDim2.new(1, 0, 0, 5)
+    Bar.Position = UDim2.new(0, 0, 0, 30)
+    Bar.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    Bar.Parent = SliderFrame
+
+    local Fill = Instance.new("Frame")
+    Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    Fill.Parent = Bar
+
+    local dragging = false
+    local function Update()
+        local percent = math.clamp((UserInputService:GetMouseLocation().X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+        Fill.Size = UDim2.new(percent, 0, 1, 0)
+        local val = math.floor(min + (max - min) * percent)
+        Label.Text = text .. ": " .. val
+        callback(val)
+    end
+
+    Bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then Update() end
+    end)
+    
+    Instance.new("UIListLayout", parent).Padding = UDim.new(0,10)
+end
+
+-- Features Implementation
+CreateSlider(PlayerPage, "WalkSpeed", 16, 250, 16, function(v)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = v
+    end
+end)
+
+CreateSlider(PlayerPage, "JumpPower", 50, 500, 50, function(v)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.JumpPower = v
+    end
+end)
+
+-- Fly Button
+local Flying = false
+local FlyBtn = Instance.new("TextButton")
+FlyBtn.Size = UDim2.new(0.9,0,0,40)
+FlyBtn.Parent = PlayerPage
+FlyBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+FlyBtn.Text = "Toggle Fly"
+FlyBtn.TextColor3 = Color3.new(1,1,1)
+FlyBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", FlyBtn)
+
+FlyBtn.MouseButton1Click:Connect(function()
+    Flying = not Flying
+    Notify("Fly: " .. tostring(Flying))
+    local char = LocalPlayer.Character
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if Flying then
+        local bv = Instance.new("BodyVelocity", hrp)
+        bv.Name = "FlyVelocity"
+        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bv.Velocity = Vector3.new(0,0.1,0)
+    else
+        if hrp:FindFirstChild("FlyVelocity") then hrp.FlyVelocity:Destroy() end
+    end
+end)
+
+-- Fun Spin
+local SpinActive = false
+local SpinBtn = FlyBtn:Clone()
+SpinBtn.Parent = FunPage
+SpinBtn.Text = "Toggle Spin"
+SpinBtn.MouseButton1Click:Connect(function()
+    SpinActive = not SpinActive
+    Notify("Spin: " .. tostring(SpinActive))
+    spawn(function()
+        while SpinActive do
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(15), 0)
+            end
+            task.wait()
+        end
+    end)
+end)
+
+-- Noclip Toggle
+local Noclip = false
+local NoclipBtn = FlyBtn:Clone()
+NoclipBtn.Parent = PlayerPage
+NoclipBtn.Text = "Noclip (Wall Hack)"
+NoclipBtn.MouseButton1Click:Connect(function()
+    Noclip = not Noclip
+    Notify("Noclip: " .. tostring(Noclip))
+end)
+
+RunService.Stepped:Connect(function()
+    if Noclip and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+    end
+end)
+
+Notify("RIH4NX HUB LOADED!")
+HomePage.Visible = true
